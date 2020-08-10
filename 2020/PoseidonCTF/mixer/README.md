@@ -5,7 +5,9 @@ mixer: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, s
 ```
 
 Let's open it in Binary Ninja. The `_start` function is really short:
+
 ![_start](_start.png)
+
 `mprotect` modifies protection for particular places in memory (depending on compilation parameters, you can't always execute and read from every place).
 Let's see what the `prot` argument for `sys_mprotect` is, for this consult `man mprotect`:
 ```
@@ -34,11 +36,15 @@ with open('file.bin', 'wb') as f:
 ```
 
 ![bin1](bin1.png)
+
 (last block from previous screenshot overlaps)
+
 ![bin2](bin2.png)
 
 We quickly notice that there's just one point of return, and it's again a `ret far`, this time with `cs=0x33`, which is a return to 64 bit mode. The address there points just at the `cmp eax, 0x0`:
+
 ![backfromretfar](backfromretfar.png)
+
 Examining strings (moved to `rsi`), we know that `eax` needs to equal 0 at the end of our 32 bit code.
 
 Back to the x86 bit code: after a while of careful reversing, we notice this is a stream cipher (RC4 specifically, but it's not important): which takes 32 bytes from the `stdin`, takes a hardcoded key from memory, generates keystream and xors the input (which is at `0x610771`) and the output (which is at `0x610371`). The expected encrypted flag is also in the memory - at `0x610151`. We know it, because there's a checksum, which verifies that the `xor(computed_encrypted_flag) ^ xor(expected_encrypted_flag)` is zero (this is the `eax` at the end). This is obviously too few information, so we take an obvious guess, that the memory content there is actually the encrypted flag. To extract the flag, we use the property of xor, which tells that if `flag xor keystream == known_data`, then `flag == keystream xor known_data`. To get the `keystream` and `known_data`, we simply use `gdb` and supply input consisting of all zeros (which we store in file `input`, for convenience):
