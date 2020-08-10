@@ -4,7 +4,7 @@ $ file mixer
 mixer: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, stripped
 ```
 
-Let's open it in Binary Ninja. The `_start` function is really short:
+Let's open it in Binary Ninja. The `_start` function is really short:\
 
 ![_start](_start.png)
 
@@ -35,15 +35,21 @@ with open('file.bin', 'wb') as f:
     f.write(data)
 ```
 
+<br/><br/>
 ![bin1](bin1.png)
+<br/><br/>
 
 (last block from previous screenshot overlaps)
 
+<br/><br/>
 ![bin2](bin2.png)
+<br/><br/>
 
 We quickly notice that there's just one point of return, and it's again a `ret far`, this time with `cs=0x33`, which is a return to 64 bit mode. The address there points just at the `cmp eax, 0x0`:
 
+<br/><br/>
 ![backfromretfar](backfromretfar.png)
+<br/><br/>
 
 Examining strings (moved to `rsi`), we know that `eax` needs to equal 0 at the end of our 32 bit code.
 
